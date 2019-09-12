@@ -13,6 +13,7 @@ import android.widget.Toast;
 
 import com.apurba.waterreminder.sync.ReminderTasks;
 import com.apurba.waterreminder.sync.WaterReminderIntentService;
+import com.apurba.waterreminder.utilities.NotificationUtils;
 import com.apurba.waterreminder.utilities.PreferenceUtilities;
 
 
@@ -96,5 +97,11 @@ public class MainActivity extends AppCompatActivity
         } else if (PreferenceUtilities.KEY_CHARGING_REMINDER_COUNT.equals(key)) {
             updateChargingReminderCount();
         }
+    }
+
+    public void testNotification(View view) {
+        NotificationUtils.remindUserBecauseCharging(this); // if app is already running
+        // we don't need to create another one. Instead we can bring front the previously created app
+        // so modify manifest file in the activity tag android:launchMode="singleTop"
     }
 }
