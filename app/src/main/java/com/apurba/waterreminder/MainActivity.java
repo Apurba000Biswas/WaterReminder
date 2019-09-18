@@ -12,6 +12,7 @@ import android.widget.TextView;
 import android.widget.Toast;
 
 import com.apurba.waterreminder.sync.ReminderTasks;
+import com.apurba.waterreminder.sync.ReminderUtilities;
 import com.apurba.waterreminder.sync.WaterReminderIntentService;
 import com.apurba.waterreminder.utilities.NotificationUtils;
 import com.apurba.waterreminder.utilities.PreferenceUtilities;
@@ -39,6 +40,8 @@ public class MainActivity extends AppCompatActivity
         /** Set the original values in the UI **/
         updateWaterCount();
         updateChargingReminderCount();
+
+        ReminderUtilities.scheduleChargingReminder(this);
 
         /** Setup the shared preference listener **/
         SharedPreferences prefs = PreferenceManager.getDefaultSharedPreferences(this);
