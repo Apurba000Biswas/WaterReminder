@@ -7,6 +7,8 @@ import android.content.Context;
 import android.content.Intent;
 import android.content.IntentFilter;
 import android.content.SharedPreferences;
+import android.os.BatteryManager;
+import android.os.Build;
 import android.os.Bundle;
 import android.preference.PreferenceManager;
 import android.view.View;
@@ -17,7 +19,6 @@ import android.widget.Toast;
 import com.apurba.waterreminder.sync.ReminderTasks;
 import com.apurba.waterreminder.sync.ReminderUtilities;
 import com.apurba.waterreminder.sync.WaterReminderIntentService;
-import com.apurba.waterreminder.utilities.NotificationUtils;
 import com.apurba.waterreminder.utilities.PreferenceUtilities;
 
 
@@ -56,10 +57,9 @@ public class MainActivity extends AppCompatActivity
         prefs.registerOnSharedPreferenceChangeListener(this);
 
         mChargingIntentFilter = new IntentFilter();
+        mChargingReceiver = new ChargingBroadcastReceiver();
         mChargingIntentFilter.addAction(Intent.ACTION_POWER_CONNECTED);
         mChargingIntentFilter.addAction(Intent.ACTION_POWER_DISCONNECTED);
-
-        mChargingReceiver = new ChargingBroadcastReceiver();
     }
 
     /**
@@ -82,9 +82,10 @@ public class MainActivity extends AppCompatActivity
     }
 
     private void showCharging(boolean isCharging){
-        if (isCharging){
+        if (isCharging) {
             mChargingImageView.setImageResource(R.drawable.ic_power_pink_80px);
-        }else{
+
+        } else {
             mChargingImageView.setImageResource(R.drawable.ic_power_grey_80px);
         }
     }
@@ -107,6 +108,21 @@ public class MainActivity extends AppCompatActivity
     @Override
     protected void onResume() {
         super.onResume();
+
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.M) {
+            BatteryManager batteryManager = (BatteryManager) getSystemService(BATTERY_SERVICE);
+            showCharging(batteryManager.isCharging());
+        } else {
+            IntentFilter ifilter = new IntentFilter(Intent.ACTION_BATTERY_CHANGED);
+
+            Intent currentBatteryStatusIntent = registerReceiver(null, ifilter);
+
+            int batteryStatus = currentBatteryStatusIntent.getIntExtra(BatteryManager.EXTRA_STATUS, -1);
+            boolean isCharging = batteryStatus == BatteryManager.BATTERY_STATUS_CHARGING ||
+                    batteryStatus == BatteryManager.BATTERY_STATUS_FULL;
+            showCharging(isCharging);
+        }
+
         registerReceiver(mChargingReceiver, mChargingIntentFilter);
     }
 
@@ -119,7 +135,7 @@ public class MainActivity extends AppCompatActivity
     @Override
     protected void onDestroy() {
         super.onDestroy();
-        /** Cleanup the shared preference listener **/
+
         SharedPreferences prefs = PreferenceManager.getDefaultSharedPreferences(this);
         prefs.unregisterOnSharedPreferenceChangeListener(this);
     }
@@ -143,7 +159,7 @@ public class MainActivity extends AppCompatActivity
         @Override
         public void onReceive(Context context, Intent intent) {
             String action = intent.getAction();
-            boolean isCharging = action.equals(Intent.ACTION_POWER_CONNECTED);
+            boolean isCharging = (action.equals(Intent.ACTION_POWER_CONNECTED));
             showCharging(isCharging);
         }
     }
