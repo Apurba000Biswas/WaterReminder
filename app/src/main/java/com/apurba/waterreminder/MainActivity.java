@@ -2,7 +2,10 @@ package com.apurba.waterreminder;
 
 import androidx.appcompat.app.AppCompatActivity;
 
+import android.content.BroadcastReceiver;
+import android.content.Context;
 import android.content.Intent;
+import android.content.IntentFilter;
 import android.content.SharedPreferences;
 import android.os.Bundle;
 import android.preference.PreferenceManager;
@@ -27,6 +30,11 @@ public class MainActivity extends AppCompatActivity
 
     private Toast mToast;
 
+    IntentFilter mChargingIntentFilter;
+
+    private ChargingBroadcastReceiver mChargingReceiver;
+
+
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
@@ -46,6 +54,12 @@ public class MainActivity extends AppCompatActivity
         /** Setup the shared preference listener **/
         SharedPreferences prefs = PreferenceManager.getDefaultSharedPreferences(this);
         prefs.registerOnSharedPreferenceChangeListener(this);
+
+        mChargingIntentFilter = new IntentFilter();
+        mChargingIntentFilter.addAction(Intent.ACTION_POWER_CONNECTED);
+        mChargingIntentFilter.addAction(Intent.ACTION_POWER_DISCONNECTED);
+
+        mChargingReceiver = new ChargingBroadcastReceiver();
     }
 
     /**
@@ -67,6 +81,14 @@ public class MainActivity extends AppCompatActivity
 
     }
 
+    private void showCharging(boolean isCharging){
+        if (isCharging){
+            mChargingImageView.setImageResource(R.drawable.ic_power_pink_80px);
+        }else{
+            mChargingImageView.setImageResource(R.drawable.ic_power_grey_80px);
+        }
+    }
+
     /**
      * Adds one to the water count and shows a toast
      */
@@ -79,6 +101,19 @@ public class MainActivity extends AppCompatActivity
         incrementWaterCountIntent.setAction(ReminderTasks.ACTION_INCREMENT_WATER_COUNT);
 
         startService(incrementWaterCountIntent);
+    }
+
+
+    @Override
+    protected void onResume() {
+        super.onResume();
+        registerReceiver(mChargingReceiver, mChargingIntentFilter);
+    }
+
+    @Override
+    protected void onPause() {
+        super.onPause();
+        unregisterReceiver(mChargingReceiver);
     }
 
     @Override
@@ -99,6 +134,17 @@ public class MainActivity extends AppCompatActivity
             updateWaterCount();
         } else if (PreferenceUtilities.KEY_CHARGING_REMINDER_COUNT.equals(key)) {
             updateChargingReminderCount();
+        }
+    }
+
+
+    private class ChargingBroadcastReceiver extends BroadcastReceiver{
+
+        @Override
+        public void onReceive(Context context, Intent intent) {
+            String action = intent.getAction();
+            boolean isCharging = action.equals(Intent.ACTION_POWER_CONNECTED);
+            showCharging(isCharging);
         }
     }
 
